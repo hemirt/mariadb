@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.5.0)
+project(database CXX)
+
+SET(Boost_USE_STATIC_LIBS OFF)
+SET(Boost_USE_MULTITHREAD ON)
+find_package(Boost 1.60.0 REQUIRED COMPONENTS system thread)
+include_directories(${Boost_INCLUDE_DIRS})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("debug")
+    set(CMAKE_CXX_FLAGS "-pthread -std=c++1z -O0 -g -fsanitize=address ${CMAKE_CXX_FLAGS}")
+else()
+    message("release")
+    set(CMAKE_CXX_FLAGS "-pthread -std=c++1z -O3 ${CMAKE_CXX_FLAGS}")
+endif()
+
+set(SOURCE
+    ${SOURCE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mariadb.cpp
+)
+
+add_executable(database ${SOURCE})
+target_link_libraries(database ${Boost_LIBRARIES} mariadb)
