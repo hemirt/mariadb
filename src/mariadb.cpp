@@ -42,8 +42,9 @@ void
 MariaDB::runWorker()
 {
     std::unique_lock lk(this->workerM);
-    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), nullptr, 0, nullptr, 0);
-    
+    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), nullptr, 0,
+                                               nullptr, 0);
+
     while (!this->workerExit) {
         this->workerCV.wait(lk, [this] { return this->workerReady; });
         // process queue
@@ -53,7 +54,7 @@ MariaDB::runWorker()
             this->queue.pop();
             // process query
             qH->result = processQuery(qH->query);
-            
+
             qH->wake();
         }
         this->workerReady = false;
@@ -125,6 +126,5 @@ MariaDB::executeQuery(Query<Values>&& query)
     return std::move(qH->result);
 }
 
-
-} // namespace DB
-} // namespace hemirt
+}  // namespace DB
+}  // namespace hemirt
