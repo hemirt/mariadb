@@ -3,17 +3,18 @@
 #include <iostream>
 
 namespace hemirt {
+namespace DB {
 
 using MariaDB_detail::QueryHandle;
 
-MariaDB::MariaDB(std::string&& dbName_)
-    : dbName(std::move(dbName_))
+MariaDB::MariaDB(Credentials&& creds_)
+    : creds(std::move(creds_))
 {
     this->establishWorker();
 }
 
-MariaDB::MariaDB(const std::string& dbName_)
-    : dbName(dbName_)
+MariaDB::MariaDB(const Credentials& creds_)
+    : creds(creds_)
 {
     this->establishWorker();
 }
@@ -22,13 +23,13 @@ MariaDB::~MariaDB() noexcept
 {
     this->exitWorker();
     this->worker.join();
-    std::cout << "~MariaDB: " << this->getDBName() << std::endl;
+    std::cout << "~MariaDB: " << this->getDB() << std::endl;
 }
 
 const std::string&
-MariaDB::getDBName() const
+MariaDB::getDB() const
 {
-    return this->dbName;
+    return this->creds.db;
 }
 
 void
@@ -41,6 +42,8 @@ void
 MariaDB::runWorker()
 {
     std::unique_lock lk(this->workerM);
+    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), nullptr, 0, nullptr, 0);
+    
     while (!this->workerExit) {
         this->workerCV.wait(lk, [this] { return this->workerReady; });
         // process queue
@@ -50,27 +53,31 @@ MariaDB::runWorker()
             this->queue.pop();
             // process query
             qH->result = processQuery(qH->query);
-
+            
             qH->wake();
         }
         this->workerReady = false;
     }
 }
 
-DB::Result
-MariaDB::processQuery(DB::Query<MariaDB::Values>& query)
+Result
+MariaDB::processQuery(Query<MariaDB::Values>& query)
 {
     std::cout << "Processing Query: " << query.getSql() << std::endl;
     switch (query.type) {
-        case DB::QueryType::UNKNOWN: {
+        case QueryType::RAWSQL: {
+            std::cout << "query type is QueryType::RAWSQL" << std::endl;
+            return Result();
+        } break;
+        case QueryType::UNKNOWN: {
             std::cout << "query type is QueryType::UNKNOWN" << std::endl;
-            return DB::Result();
+            return Result();
         } break;
         default: {
             std::cout << "QueryType not handled: " << query.type << std::endl;
         } break;
     }
-    return DB::Result();
+    return Result();
 }
 
 void
@@ -94,15 +101,15 @@ MariaDB::exitWorker()
     this->workerCV.notify_all();
 }
 
-DB::Result
-MariaDB::executeQuery(const DB::Query<Values>& query)
+Result
+MariaDB::executeQuery(const Query<Values>& query)
 {
     std::cout << "const" << std::endl;
-    return this->executeQuery(DB::Query<Values>(query));
+    return this->executeQuery(Query<Values>(query));
 }
 
-DB::Result
-MariaDB::executeQuery(DB::Query<Values>&& query)
+Result
+MariaDB::executeQuery(Query<Values>&& query)
 {
     std::cout << "move" << std::endl;
     std::shared_ptr<QueryHandle> qH = std::make_shared<QueryHandle>(std::move(query));
@@ -118,4 +125,6 @@ MariaDB::executeQuery(DB::Query<Values>&& query)
     return std::move(qH->result);
 }
 
-}  // namespace hemirt
+
+} // namespace DB
+} // namespace hemirt

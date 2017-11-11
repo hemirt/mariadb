@@ -11,8 +11,10 @@
 
 #include "query.hpp"
 #include "result.hpp"
+#include "mariadbimpl.hpp"
 
 namespace hemirt {
+namespace DB {
 
 namespace MariaDB_detail {
 
@@ -22,13 +24,13 @@ using Values = std::variant<std::nullptr_t, std::int8_t, std::int16_t, std::int3
 class QueryHandle
 {
 public:
-    QueryHandle(DB::Query<Values>&& q)
+    QueryHandle(Query<Values>&& q)
         : query(std::move(q))
     {
     }
 
-    DB::Query<Values> query;
-    DB::Result result;
+    Query<Values> query;
+    Result result;
 
     std::unique_lock<std::mutex>
     lock()
@@ -60,13 +62,38 @@ private:
 
 }  // namespace MariaDB_detail
 
+class Credentials
+{
+public:
+    Credentials(std::string host_, std::string user_, std::string pass_, std::string db_, unsigned int port_, std::string unixsock_, unsigned long flags_)
+        : host(std::move(host_))
+        , user(std::move(user_))
+        , pass(std::move(pass_))
+        , db(std::move(db_))
+        , unixsock(std::move(unixsock_))
+        , port(port_)
+        , flags(flags_)
+    {
+            
+    }
+    
+    std::string host;
+    std::string user;
+    std::string pass;
+    std::string db;
+    std::string unixsock;
+    unsigned int port = 0;
+    unsigned long flags = 0;
+};
+
 class MariaDB
 {
 public:
     using Values = MariaDB_detail::Values;
 
-    MariaDB(const std::string& dbName_);
-    MariaDB(std::string&& dbName_);
+
+    MariaDB(const Credentials& creds);
+    MariaDB(Credentials&& creds);
     MariaDB(MariaDB&&) = delete;
     MariaDB(const MariaDB&) = delete;
     MariaDB& operator=(const MariaDB&) = delete;
@@ -74,13 +101,13 @@ public:
 
     ~MariaDB() noexcept;
 
-    DB::Result executeQuery(DB::Query<Values>&& query);
-    DB::Result executeQuery(const DB::Query<Values>& query);
 
-    const std::string& getDBName() const;
+    Result executeQuery(Query<Values>&& query);
+    Result executeQuery(const Query<Values>& query);
+    
+    const std::string& getDB() const;
 
 private:
-    std::string dbName;
 
     void runWorker();
     void exitWorker();
@@ -98,10 +125,17 @@ private:
     std::mutex queueM;
 
     std::queue<std::shared_ptr<MariaDB_detail::QueryHandle>> queue;
-
-    DB::Result processQuery(DB::Query<Values>& query);
+    
+    Result processQuery(Query<Values>& query);
+    
+private: // MYSQL related stuff
+    std::unique_ptr<MariaDBImpl> impl;
+    Credentials creds;
+    
+    
 };
 
-}  // namespace hemirt
+} // namespace DB
+} // namespace hemirt
 
 #endif  // HEMIRT_MARIADB_HPP
