@@ -16,83 +16,92 @@ namespace hemirt {
 
 namespace MariaDB_detail {
 
-using Values =
-    std::variant<std::nullptr_t, std::int8_t, std::int16_t, std::int32_t,
-                 std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t,
-                 std::uint64_t, std::string>;
+using Values = std::variant<std::nullptr_t, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t,
+                            std::uint16_t, std::uint32_t, std::uint64_t, std::string>;
 
-class QueryHandle {
+class QueryHandle
+{
 public:
-  QueryHandle(DB::Query<Values> &&q) : query(std::move(q)) {}
-
-  DB::Query<Values> query;
-  DB::Result result;
-
-  std::unique_lock<std::mutex> lock() {
-    return std::unique_lock<std::mutex>(this->m);
-  }
-
-  void wait(std::unique_lock<std::mutex> &lk) {
-    this->cv.wait(lk, [this]() { return this->ready; });
-  }
-
-  void wake() {
+    QueryHandle(DB::Query<Values>&& q)
+        : query(std::move(q))
     {
-      std::unique_lock<std::mutex> lk(this->m);
-      this->ready = true;
     }
-    this->cv.notify_all();
-  }
+
+    DB::Query<Values> query;
+    DB::Result result;
+
+    std::unique_lock<std::mutex>
+    lock()
+    {
+        return std::unique_lock<std::mutex>(this->m);
+    }
+
+    void
+    wait(std::unique_lock<std::mutex>& lk)
+    {
+        this->cv.wait(lk, [this]() { return this->ready; });
+    }
+
+    void
+    wake()
+    {
+        {
+            std::unique_lock<std::mutex> lk(this->m);
+            this->ready = true;
+        }
+        this->cv.notify_all();
+    }
 
 private:
-  std::condition_variable cv;
-  std::mutex m;
-  bool ready = false;
+    std::condition_variable cv;
+    std::mutex m;
+    bool ready = false;
 };
 
-} // namespace MariaDB_detail
+}  // namespace MariaDB_detail
 
-class MariaDB {
+class MariaDB
+{
 public:
-  using Values = MariaDB_detail::Values;
+    using Values = MariaDB_detail::Values;
 
-  MariaDB(const std::string &dbName_);
-  MariaDB(std::string &&dbName_);
-  MariaDB(MariaDB &&) = delete;
-  MariaDB(const MariaDB &) = delete;
-  MariaDB &operator=(const MariaDB &) = delete;
-  MariaDB &operator=(MariaDB &&) = delete;
+    MariaDB(const std::string& dbName_);
+    MariaDB(std::string&& dbName_);
+    MariaDB(MariaDB&&) = delete;
+    MariaDB(const MariaDB&) = delete;
+    MariaDB& operator=(const MariaDB&) = delete;
+    MariaDB& operator=(MariaDB&&) = delete;
 
-  ~MariaDB() noexcept;
+    ~MariaDB() noexcept;
 
-  DB::Result executeQuery(DB::Query<Values> &&query);
-  DB::Result executeQuery(const DB::Query<Values> &query);
+    DB::Result executeQuery(DB::Query<Values>&& query);
+    DB::Result executeQuery(const DB::Query<Values>& query);
 
-  const std::string &getDBName() const;
+    const std::string& getDBName() const;
 
 private:
-  std::string dbName;
+    std::string dbName;
 
-  void runWorker();
-  void exitWorker();
+    void runWorker();
+    void exitWorker();
 
-  void establishWorker();
-  std::thread worker;
+    void establishWorker();
+    std::thread worker;
 
-  std::condition_variable workerCV;
-  std::mutex workerM;
-  bool workerReady = false;
-  std::atomic<bool> workerExit = false;
+    std::condition_variable workerCV;
+    std::mutex workerM;
+    bool workerReady = false;
+    std::atomic<bool> workerExit = false;
 
-  void wakeWorker();
+    void wakeWorker();
 
-  std::mutex queueM;
+    std::mutex queueM;
 
-  std::queue<std::shared_ptr<MariaDB_detail::QueryHandle>> queue;
+    std::queue<std::shared_ptr<MariaDB_detail::QueryHandle>> queue;
 
-  DB::Result processQuery(DB::Query<Values> &query);
+    DB::Result processQuery(DB::Query<Values>& query);
 };
 
-} // namespace hemirt
+}  // namespace hemirt
 
-#endif // HEMIRT_MARIADB_HPP
+#endif  // HEMIRT_MARIADB_HPP
