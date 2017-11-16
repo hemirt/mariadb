@@ -48,16 +48,16 @@ MariaDB::runWorker()
     } else {
         dbptr = creds.db.c_str();
     }
-    
+
     const char* unixsockptr;
     if (creds.unixsock.empty()) {
         unixsockptr = nullptr;
     } else {
         unixsockptr = creds.unixsock.c_str();
     }
-    
-    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), dbptr, creds.port,
-                                               unixsockptr, creds.flags);
+
+    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), dbptr,
+                                               creds.port, unixsockptr, creds.flags);
 
     while (!this->workerExit) {
         this->workerCV.wait(lk, [this] { return this->workerReady; });

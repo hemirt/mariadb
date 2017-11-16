@@ -3,9 +3,9 @@
 
 #include <mariadb/mysql.h>
 
+#include "mariadbdetail.hpp"
 #include "query.hpp"
 #include "result.hpp"
-#include "mariadbdetail.hpp"
 
 namespace hemirt {
 namespace DB {
@@ -21,9 +21,9 @@ public:
     MariaDBImpl& operator=(MariaDBImpl&&) = delete;
 
     ~MariaDBImpl() noexcept;
-    
+
     std::string handleError();
-    
+
     Result query(const Query<MariaDB_detail::Values>& query);
 
 private:

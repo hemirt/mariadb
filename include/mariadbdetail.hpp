@@ -1,8 +1,8 @@
 #ifndef HEMIRT_MARIADBDETAIL_HPP
 #define HEMIRT_MARIADBDETAIL_HPP
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 #include "query.hpp"
 #include "result.hpp"
@@ -59,4 +59,4 @@ private:
 }  // namespace DB
 }  // namespace hemirt
 
-#endif // HEMIRT_MARIADBDETAIL_HPP
+#endif  // HEMIRT_MARIADBDETAIL_HPP

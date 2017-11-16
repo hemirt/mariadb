@@ -56,14 +56,15 @@ MariaDBImpl::handleError()
 Result
 MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
 {
-    switch(query.type) {
+    switch (query.type) {
         case QueryType::UNKNOWN: {
             std::cout << "MariaDBImpl::query -> QueryType::UNKNOWN" << std::endl;
         } break;
         case QueryType::RAWSQL: {
-            const auto &rawsql = query.getSql();
+            const auto& rawsql = query.getSql();
             if (mysql_real_query(this->mysql, rawsql.c_str(), rawsql.size())) {
-                std::cout << "MariaDBImpl::query RAWSQL: \"" << rawsql << "\" error: " << this->handleError() << std::endl;
+                std::cout << "MariaDBImpl::query RAWSQL: \"" << rawsql << "\" error: " << this->handleError()
+                          << std::endl;
                 this->handleError();
             }
             MYSQL_RES* result;
@@ -90,7 +91,7 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                     mysql_free_result(result);
                 }
             } while ((err = mysql_next_result(this->mysql)) == 0);
-            if(err > 0) {
+            if (err > 0) {
                 std::cout << "i error: " << this->handleError() << std::endl;
             }
         } break;
@@ -100,7 +101,6 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
     }
     return Result();
 }
-
 
 }  // namespace DB
 }  // namespace hemirt

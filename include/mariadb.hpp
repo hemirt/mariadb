@@ -9,8 +9,8 @@
 #include <thread>
 #include <variant>
 
-#include "mariadbimpl.hpp"
 #include "mariadbdetail.hpp"
+#include "mariadbimpl.hpp"
 #include "query.hpp"
 #include "result.hpp"
 
