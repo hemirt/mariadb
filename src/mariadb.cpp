@@ -42,8 +42,22 @@ void
 MariaDB::runWorker()
 {
     std::unique_lock lk(this->workerM);
-    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), nullptr, 0,
-                                               nullptr, 0);
+    const char* dbptr;
+    if (creds.db.empty()) {
+        dbptr = nullptr;
+    } else {
+        dbptr = creds.db.c_str();
+    }
+    
+    const char* unixsockptr;
+    if (creds.unixsock.empty()) {
+        unixsockptr = nullptr;
+    } else {
+        unixsockptr = creds.unixsock.c_str();
+    }
+    
+    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), dbptr, creds.port,
+                                               unixsockptr, creds.flags);
 
     while (!this->workerExit) {
         this->workerCV.wait(lk, [this] { return this->workerReady; });
@@ -53,32 +67,12 @@ MariaDB::runWorker()
             std::shared_ptr<QueryHandle> qH = std::move(this->queue.front());
             this->queue.pop();
             // process query
-            qH->result = processQuery(qH->query);
+            qH->result = this->impl->query(qH->query);
 
             qH->wake();
         }
         this->workerReady = false;
     }
-}
-
-Result
-MariaDB::processQuery(Query<MariaDB::Values>& query)
-{
-    std::cout << "Processing Query: " << query.getSql() << std::endl;
-    switch (query.type) {
-        case QueryType::RAWSQL: {
-            std::cout << "query type is QueryType::RAWSQL" << std::endl;
-            return Result();
-        } break;
-        case QueryType::UNKNOWN: {
-            std::cout << "query type is QueryType::UNKNOWN" << std::endl;
-            return Result();
-        } break;
-        default: {
-            std::cout << "QueryType not handled: " << query.type << std::endl;
-        } break;
-    }
-    return Result();
 }
 
 void
