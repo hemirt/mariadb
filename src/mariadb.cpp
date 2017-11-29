@@ -99,14 +99,12 @@ MariaDB::exitWorker()
 Result
 MariaDB::executeQuery(const Query<Values>& query)
 {
-    std::cout << "const" << std::endl;
     return this->executeQuery(Query<Values>(query));
 }
 
 Result
 MariaDB::executeQuery(Query<Values>&& query)
 {
-    std::cout << "move" << std::endl;
     std::shared_ptr<QueryHandle> qH = std::make_shared<QueryHandle>(std::move(query));
     {
         std::lock_guard<std::mutex> lk(this->queueM);

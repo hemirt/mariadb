@@ -21,6 +21,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mariadb.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mariadbimpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/result.cpp
 )
 
 add_executable(database ${SOURCE})

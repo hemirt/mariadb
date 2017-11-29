@@ -63,15 +63,9 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
         case QueryType::RAWSQL: {
             const auto& rawsql = query.getSql();
             if (mysql_real_query(this->mysql, rawsql.c_str(), rawsql.size())) {
-                std::cout << "MariaDBImpl::query RAWSQL: \"" << rawsql << "\" error: " << this->handleError()
-                          << std::endl;
-                this->handleError();
-            }
-            MYSQL_RES* result;
-            int err;
-            do {
-                result = mysql_store_result(this->mysql);
-                std::cout << "rrr:: " << (result == nullptr) << std::endl;
+                return ErrorResult(this->handleError());
+            } else {
+                MYSQL_RES* result = mysql_store_result(this->mysql);
                 if (result) {
                     unsigned int num_fields = mysql_num_fields(result);
                     MYSQL_ROW row;
@@ -89,10 +83,14 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                     }
                     std::cout << std::endl;
                     mysql_free_result(result);
+                } else {
+                    if (mysql_errno(this->mysql)) {
+                        return ErrorResult(this->handleError());
+                    } else if (mysql_field_count(this->mysql) == 0) {
+                        auto affected_rows = mysql_affected_rows(this->mysql);
+                        return AffectedRowsResult(affected_rows);
+                    }
                 }
-            } while ((err = mysql_next_result(this->mysql)) == 0);
-            if (err > 0) {
-                std::cout << "i error: " << this->handleError() << std::endl;
             }
         } break;
         default: {

@@ -28,5 +28,15 @@ main(int argc, char** argv)
     db.executeQuery(q3);
     db.executeQuery(q);
 
+    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q4("Keepo");
+    q4.type = hemirt::DB::QueryType::RAWSQL;
+
+    auto result = db.executeQuery(q4);
+    if (result) {
+        std::cout << "Keepo" << std::endl;
+    } else {
+        std::cout << "OMEGALUL" << result.success() << " " << result.errorResult().error() << std::endl;
+    }
+
     return 0;
 }
