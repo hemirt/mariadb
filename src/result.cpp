@@ -18,12 +18,6 @@ AffectedRowsResult::AffectedRowsResult(std::uint64_t num)
 {
 }
 
-bool
-Result::success() const
-{
-    return !std::holds_alternative<ErrorResult>(this->result);
-}
-
 Result::Result(ErrorResult&& err)
     : result(err)
 {
@@ -37,22 +31,22 @@ Result::Result(AffectedRowsResult&& arr)
 {
 }
 
-ErrorResult&
-Result::errorResult()
+ErrorResult*
+Result::error()
 {
-    return std::get<ErrorResult>(this->result);
+    return std::get_if<ErrorResult>(&this->result);
 }
 
-ReturnedRowsResult&
-Result::returnedRows()
+ReturnedRowsResult*
+Result::returned()
 {
-    return std::get<ReturnedRowsResult>(this->result);
+    return std::get_if<ReturnedRowsResult>(&this->result);
 }
 
-AffectedRowsResult&
-Result::affectedRows()
+AffectedRowsResult*
+Result::affected()
 {
-    return std::get<AffectedRowsResult>(this->result);
+    return std::get_if<AffectedRowsResult>(&this->result);
 }
 
 }  // namespace DB

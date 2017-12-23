@@ -70,18 +70,12 @@ public:
     Result& operator=(const Result&) = default;
     ~Result() = default;
 
-    bool success() const;
-    explicit operator bool() const
-    {
-        return this->success();
-    }
-
-    ErrorResult& errorResult();
-    ReturnedRowsResult& returnedRows();
-    AffectedRowsResult& affectedRows();
+    ErrorResult* error();
+    ReturnedRowsResult* returned();
+    AffectedRowsResult* affected();
 
 private:
-    std::variant<std::monostate, ErrorResult, ReturnedRowsResult, AffectedRowsResult> result;
+    std::variant<ErrorResult, ReturnedRowsResult, AffectedRowsResult> result;
 };
 
 }  // namespace DB

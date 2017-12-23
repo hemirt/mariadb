@@ -20,8 +20,11 @@ main(int argc, char** argv)
     q2.type = hemirt::DB::QueryType::RAWSQL;
 
     db.executeQuery(q2);
-    db.executeQuery(q);
-
+    auto res = db.executeQuery(q);
+    if (auto pval = res.returned(); pval) {
+        std::cout << "table returned" << std::endl;
+    }
+    
     hemirt::DB::Query<hemirt::DB::MariaDB::Values> q3("DROP TABLE IF EXISTS `Keepo`");
     q3.type = hemirt::DB::QueryType::RAWSQL;
 
@@ -32,10 +35,10 @@ main(int argc, char** argv)
     q4.type = hemirt::DB::QueryType::RAWSQL;
 
     auto result = db.executeQuery(q4);
-    if (result) {
-        std::cout << "Keepo" << std::endl;
+    if (auto pval = result.error(); !pval) {
+        std::cout << "Successful Keepo" << std::endl;
     } else {
-        std::cout << "OMEGALUL" << result.success() << " " << result.errorResult().error() << std::endl;
+        std::cout << "Erroneous OMEGALUL" << " " << pval->error() << std::endl;
     }
 
     return 0;

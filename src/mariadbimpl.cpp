@@ -83,6 +83,7 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                     }
                     std::cout << std::endl;
                     mysql_free_result(result);
+                    return ReturnedRowsResult();
                 } else {
                     if (mysql_errno(this->mysql)) {
                         return ErrorResult(this->handleError());
