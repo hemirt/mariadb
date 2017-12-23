@@ -37,8 +37,8 @@ public:
     std::string pass;
     std::string db;
     std::string unixsock;
-    unsigned int port = 0;
-    unsigned long flags = 0;
+    unsigned int port;
+    unsigned long flags;
 };
 
 class MariaDB

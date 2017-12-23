@@ -69,21 +69,21 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                 if (result) {
                     unsigned int num_fields = mysql_num_fields(result);
                     MYSQL_ROW row;
+                    std::vector<std::vector<std::pair<bool, std::string>>> retData;
                     while ((row = mysql_fetch_row(result))) {
                         unsigned long* lengths = mysql_fetch_lengths(result);
+                        std::vector<std::pair<bool, std::string>> retRow;
                         for (int i = 0; i < num_fields; ++i) {
                             if (row[i] == nullptr) {
-                                std::cout << " NULL ";
+                                retRow.push_back({false, std::string()});
                             } else {
-                                std::string_view sv(row[i], lengths[i]);
-                                std::cout << " " << sv << " ";
+                                retRow.push_back({true, std::string(row[i], lengths[i])});
                             }
                         }
-                        std::cout << std::endl;
+                        retData.push_back(std::move(retRow));
                     }
-                    std::cout << std::endl;
                     mysql_free_result(result);
-                    return ReturnedRowsResult();
+                    return ReturnedRowsResult{retData};
                 } else {
                     if (mysql_errno(this->mysql)) {
                         return ErrorResult(this->handleError());

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 #include <variant>
+#include <utility>
+#include <vector>
 
 namespace hemirt {
 namespace DB {
@@ -36,6 +38,8 @@ class ReturnedRowsResult
 public:
     // SELECT and SELECT like queries
     // return results
+    std::vector<std::vector<std::pair<bool, std::string>>> data;
+
 private:
 };
 
