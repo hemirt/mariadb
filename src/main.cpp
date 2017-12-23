@@ -43,32 +43,70 @@ main(int argc, char** argv)
 
     db.executeQuery(q);
 
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q2(
-        "CREATE TABLE IF NOT EXISTS `Keepo` (`index` INT, `name` CHAR(10), PRIMARY KEY(`index`))");
-    q2.type = hemirt::DB::QueryType::RAWSQL;
-
-    db.executeQuery(q2);
-    auto res = db.executeQuery(q);
-    if (auto pval = res.returned(); pval) {
-        std::cout << "table returned" << std::endl;
-        for (const auto& row : pval->data) {
-            for (const auto& column : row) {
-                if (column.first) {
-                    std::cout << column.second << " ";
-                } else {
-                    std::cout << "NULL";
+    auto showRes = [](auto& res) {
+                std::cout << "res value type: " << res.getType() << std::endl;
+                if (auto pval = res.returned(); pval) {
+                    std::cout << "table returned" << std::endl;
+                    if (pval->data.empty()) {
+                        std::cout << std::endl;
+                    }
+                    for (const auto& row : pval->data) {
+                        for (const auto& column : row) {
+                            if (column.first) {
+                                std::cout << column.second << " ";
+                            } else {
+                                std::cout << "NULL";
+                            }
+                        }
+                        std::cout << std::endl;
+                    }
+                } else if (auto eval = res.error(); eval) { 
+                    std::cout << eval->error() << std::endl;
+                } else if (auto aval = res.affected(); aval) {
+                    std::cout << aval->affected() << std::endl;
                 }
-            }
-            std::cout << std::endl;
-        }
+            };
+            
+    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q2(
+        "CREATE TABLE IF NOT EXISTS `Keepo` (`index` INT AUTO_INCREMENT, `name` CHAR(10), PRIMARY KEY(`index`))");
+    q2.type = hemirt::DB::QueryType::RAWSQL;
+    {
+        auto res = db.executeQuery(q2);
+        showRes(res);
+    }
+    
+    {
+        auto res = db.executeQuery(q);
+        showRes(res);
+    }
+    
+    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q4("INSERT INTO `Keepo` (`name`) VALUES (\'nuuls\'), (\'fourtf\'), (\'hemirt\'), (\'pajlada\')");
+    q4.type = hemirt::DB::QueryType::RAWSQL;
+    {
+        auto res = db.executeQuery(q4);
+        showRes(res);
+    }
+    
+    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q5("SELECT * FROM `Keepo`");
+    q5.type = hemirt::DB::QueryType::RAWSQL;
+    {
+        auto res = db.executeQuery(q5);
+        showRes(res);
     }
     
     hemirt::DB::Query<hemirt::DB::MariaDB::Values> q3("DROP TABLE IF EXISTS `Keepo`");
     q3.type = hemirt::DB::QueryType::RAWSQL;
+    {
+        auto res = db.executeQuery(q3);
+        showRes(res);
+    }
+    
+    {
+        auto res = db.executeQuery(q);
+        showRes(res);
+    }
 
-    db.executeQuery(q3);
-    db.executeQuery(q);
-
+    /*
     hemirt::DB::Query<hemirt::DB::MariaDB::Values> q4("Keepo");
     q4.type = hemirt::DB::QueryType::RAWSQL;
 
@@ -78,6 +116,7 @@ main(int argc, char** argv)
     } else {
         std::cout << "Erroneous OMEGALUL" << " " << pval->error() << std::endl;
     }
+    */
 
     return 0;
 }

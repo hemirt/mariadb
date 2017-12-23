@@ -77,6 +77,8 @@ public:
     ErrorResult* error();
     ReturnedRowsResult* returned();
     AffectedRowsResult* affected();
+    
+    std::size_t getType() const noexcept;
 
 private:
     std::variant<ErrorResult, ReturnedRowsResult, AffectedRowsResult> result;

@@ -22,13 +22,21 @@ Result::Result(ErrorResult&& err)
     : result(err)
 {
 }
+
 Result::Result(ReturnedRowsResult&& rrr)
     : result(rrr)
 {
 }
+
 Result::Result(AffectedRowsResult&& arr)
     : result(arr)
 {
+}
+
+std::size_t
+Result::getType() const noexcept
+{
+    return this->result.index();
 }
 
 ErrorResult*
