@@ -16,12 +16,13 @@ else()
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -pthread -std=c++1z -O3 ${CMAKE_CXX_FLAGS}")
 endif()
 
-set(hemirtmariadbinterface
-    ${hemirtmariadbinterface}
+set(SOURCE
+    ${SOURCE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mariadb.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mariadbimpl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/result.cpp
 )
 
-add_library(database ${hemirtmariadbinterface})
+add_executable(database ${SOURCE})
 target_link_libraries(database ${Boost_LIBRARIES} mariadb)
