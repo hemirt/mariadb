@@ -117,6 +117,12 @@ main(int argc, char** argv)
         std::cout << "Erroneous OMEGALUL" << " " << pval->error() << std::endl;
     }
     */
+    
+    std::vector<std::string> v{"\'SELECT `* FROM Users W`HERE\' Na\"me =\"\' + \nuName + \'\" AND Pass =\"\' + uPass + \'\"\'", "Keepo `, ` \' \" K\"", "OMEGALUL` OMEGALUL2\" OMEGALUL3 \'OMG"};
+    {
+        auto res = db.escapeString(std::move(v));
+        showRes(res);
+    }
 
     return 0;
 }

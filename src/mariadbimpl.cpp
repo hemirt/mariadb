@@ -10,6 +10,9 @@ namespace DB {
 MariaDBImpl::MariaDBImpl(const char* host, const char* user, const char* passwd, const char* db, unsigned int port,
                          const char* unixSock, unsigned long flags)
 {
+    if (mysql_library_init(0, nullptr, nullptr)) {
+        throw std::runtime_error("MariaDBImpl mysql_library_init");
+    }
     if (mysql_thread_init() != 0) {
         throw std::runtime_error("MariaDBImpl mysql_thread_init");
     }
@@ -19,6 +22,7 @@ MariaDBImpl::MariaDBImpl(const char* host, const char* user, const char* passwd,
         std::string error = "MariaDBImpl couldnt init MYSQL: ";
         error += mysql_error(this->mysql);
         mysql_thread_end();
+        mysql_library_end();
         throw std::runtime_error(error);
     }
 
@@ -27,6 +31,7 @@ MariaDBImpl::MariaDBImpl(const char* host, const char* user, const char* passwd,
         error += mysql_error(this->mysql);
         mysql_close(this->mysql);
         mysql_thread_end();
+        mysql_library_end();
         throw std::runtime_error(error);
     }
 
@@ -36,9 +41,13 @@ MariaDBImpl::MariaDBImpl(const char* host, const char* user, const char* passwd,
 MariaDBImpl::~MariaDBImpl() noexcept
 {
     if (this->mysql != nullptr) {
+        std::cout << "closed: " << std::endl;
         mysql_close(this->mysql);
+        this->mysql = nullptr;
     }
     mysql_thread_end();
+    mysql_library_end();
+    
     std::cout << "MARIADBIMPL destr" << std::endl;
 }
 
@@ -93,6 +102,24 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                     }
                 }
             }
+        } break;
+        case QueryType::ESCAPE: {
+            if (query.getVals().empty()) {
+                return ErrorResult("No values to escape");
+            }
+            std::vector<std::pair<bool, std::string>> retRow;
+            const auto& ref = query.getVals();
+            for (decltype(ref.size()) i = 0; i < ref.size(); ++i) {
+                if (auto strval = std::get_if<std::string>(&ref[i]); !strval) {
+                    return ErrorResult("Value at " + std::to_string(i) + " is not a string, the type is " + std::to_string(ref[i].index()));
+                } else {
+                    std::vector<char> vec;
+                    vec.reserve(strval->size() * 2 + 1);
+                    mysql_real_escape_string(this->mysql, vec.data(), strval->c_str(), strval->size());
+                    retRow.push_back({true, std::string(std::move(vec.data()))});
+                }
+            }
+            return ReturnedRowsResult{std::vector<std::vector<std::pair<bool, std::string>>>{retRow}};
         } break;
         default: {
             std::cout << "MariaDBImpl::query -> unhandled QueryType: " << query.type << std::endl;

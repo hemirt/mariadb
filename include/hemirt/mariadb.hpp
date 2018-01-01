@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <variant>
+#include <vector>
 
 #include "mariadbdetail.hpp"
 #include "mariadbimpl.hpp"
@@ -59,6 +60,8 @@ public:
     Result executeQuery(const Query<Values>& query);
 
     const std::string& getDB() const;
+    
+    Result escapeString(std::vector<std::string>&& str);
 
 private:
     void runWorker();

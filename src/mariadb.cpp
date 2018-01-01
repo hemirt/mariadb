@@ -73,6 +73,8 @@ MariaDB::runWorker()
         }
         this->workerReady = false;
     }
+    
+    this->impl.reset();
 }
 
 void
@@ -116,6 +118,31 @@ MariaDB::executeQuery(Query<Values>&& query)
     qH->wait(lk);
 
     return std::move(qH->result);
+}
+
+Result
+MariaDB::escapeString(std::vector<std::string>&& toesc)
+{
+    Query<Values> q("");
+    q.type = QueryType::ESCAPE;
+    std::vector<Values> vec;
+    vec.reserve(toesc.size());
+    for (auto& val : toesc) {
+        vec.push_back(std::move(val));
+    }
+    q.setVals(vec);
+    std::shared_ptr<QueryHandle> qH = std::make_shared<QueryHandle>(std::move(q));
+    {
+        std::lock_guard<std::mutex> lk(this->queueM);
+        this->queue.push(qH);
+    }
+    
+    auto lk = qH->lock();
+    this->wakeWorker();
+    qH->wait(lk);
+    
+    return std::move(qH->result);
+    
 }
 
 }  // namespace DB
