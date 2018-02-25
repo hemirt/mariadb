@@ -15,6 +15,7 @@ enum class QueryType
     UNKNOWN,
     RAWSQL,
     ESCAPE,
+    PARAMETER,
 
     NUM_TYPES,
 };
@@ -34,6 +35,9 @@ operator<<(std::ostream& os, QueryType qt)
             break;
         case QueryType::NUM_TYPES:
             os << "QueryType::NUM_TYPES";
+            break;
+        case QueryType::PARAMETER:
+            os << "QueryType::PARAMETER";
             break;
         default:
             os << "Unhandled QueryType";

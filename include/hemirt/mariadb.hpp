@@ -70,7 +70,7 @@ private:
     void establishWorker();
     std::thread worker;
 
-    std::condition_variable workerCV;
+    std::condition_variable_any workerCV;
     std::mutex workerM;
     bool workerReady = false;
     std::atomic<bool> workerExit = false;

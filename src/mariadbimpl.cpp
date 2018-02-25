@@ -3,6 +3,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
+#include <algorithm>
+#include <cstring>
 
 namespace hemirt {
 namespace DB {
@@ -120,6 +122,94 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                 }
             }
             return ReturnedRowsResult{std::vector<std::vector<std::pair<bool, std::string>>>{retRow}};
+        } break;
+        case QueryType::PARAMETER: {
+/*
+                            std::monostate, -> blank
+                            hemirt::DB::DefaultVal, -> default
+                            hemirt::DB::NullVal, -> null (auto generate)
+                            std::int8_t, -> MYSQL_TYPE_TINY (signed char)
+                            std::int16_t, -> MYSQL_TYPE_SMALLINT
+                            std::int32_t, -> MYSQL_TYPE_INT
+                            std::int64_t, -> MYSQL_TYPE_BIGINT
+                            std::uint8_t, -> unsigned ^
+                            std::uint16_t, -> unsigned ^
+                            std::uint32_t, -> unsigned ^
+                            std::uint64_t, -> unsigned ^
+                            std::string -> MYSQL_TYPE_STRING (char[])
+                            >;*/
+            
+            const auto& params = query.getVals();
+            const auto numparams = params.size();
+            if (numparams == 0) {
+                return ErrorResult("No values to parametrize");
+            }
+            const auto& sql = query.getSql();            
+            if (numparams != std::count(sql.begin(), sql.end(), '?')) {
+                return ErrorResult("Number of \'?\' and values(params) dont match");
+            }
+            MYSQL_BIND bind[numparams];            
+            MYSQL_STMT *stmt = mysql_stmt_init(this->mysql);
+            if (mysql_stmt_prepare(stmt, sql.c_str(), sql.size())) {
+                const auto b = mysql_stmt_close(stmt);
+                return ErrorResult(this->handleError() + " \'" + std::to_string(b) + "\' " + mysql_stmt_error(stmt));
+            }
+            std::memset(bind, 0, sizeof(MYSQL_BIND) * numparams);
+            
+            for (std::size_t i = 0; i < numparams; ++i) {
+                auto vindex = params[i].index();
+                switch (vindex) {
+                    case 0: { // std::monostate
+                        mysql_stmt_close(stmt);
+                        throw std::runtime_error("MariaDBImpl::query Variant index \"vindex\" is zero, that is std::monospace");
+                    } break;
+/*                    case 1: { // hemirt::DB::DefaultVal, -> default
+                        bind[i].buffer_type = std::get<0>(params[i]).type;
+                        bind[i].u.indicator = STMT_INDICATOR_DEFAULT;
+                        // signed?
+                    } break;
+                    case 2: {
+                        bind[i].buffer_type = std::get<1>(params[i]).type;
+                        bind[i].u.indicator = STMT_INDICATOR_NULL;
+                        
+                    } break;
+*/                    case 3: {
+                        
+                    } break;
+                    case 4: {
+                        
+                    } break;
+                    case 5: {
+                        
+                    } break;
+                    case 6: {
+                        
+                    } break;
+                    case 7: {
+                        
+                    } break;
+                    case 8: {
+                        
+                    } break;
+                    case 9: {
+                        
+                    } break;
+                    case 10: {
+                        
+                    } break;
+                    case 11: {
+                        
+                    } break;                    
+                    default: {
+                        mysql_stmt_close(stmt);
+                        throw std::runtime_error("MariaDBImpl::query Variant Index \"vindex\" not handled");
+                    } break;
+                }
+            }
+            
+
+            
+            
         } break;
         default: {
             std::cout << "MariaDBImpl::query -> unhandled QueryType: " << query.type << std::endl;

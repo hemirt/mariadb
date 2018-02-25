@@ -41,37 +41,69 @@ MariaDB::establishWorker()
 void
 MariaDB::runWorker()
 {
-    std::unique_lock lk(this->workerM);
-    const char* dbptr;
-    if (creds.db.empty()) {
-        dbptr = nullptr;
-    } else {
-        dbptr = creds.db.c_str();
-    }
+    {
+        std::unique_lock lk(this->workerM);
+        const char* dbptr;
+        if (creds.db.empty()) {
+            dbptr = nullptr;
+        } else {
+            dbptr = creds.db.c_str();
+        }
 
-    const char* unixsockptr;
-    if (creds.unixsock.empty()) {
-        unixsockptr = nullptr;
-    } else {
-        unixsockptr = creds.unixsock.c_str();
-    }
+        const char* unixsockptr;
+        if (creds.unixsock.empty()) {
+            unixsockptr = nullptr;
+        } else {
+            unixsockptr = creds.unixsock.c_str();
+        }
 
-    this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), dbptr,
-                                               creds.port, unixsockptr, creds.flags);
+        this->impl = std::make_unique<MariaDBImpl>(creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), dbptr,
+                                                   creds.port, unixsockptr, creds.flags);
+    }
 
     while (!this->workerExit) {
+        
+        struct DualLock {
+            DualLock(std::mutex& m1, std::mutex& m2) 
+                : l1(m1, std::defer_lock)
+                , l2(m2, std::defer_lock)
+            {
+                std::lock(this->l1, this->l2);
+            }
+            
+            void lock() {
+                std::lock(this->l1, this->l2);
+            }
+            
+            void unlock() {
+                this->l1.unlock();
+                this->l2.unlock();
+            }
+            
+            std::unique_lock<std::mutex> l1;
+            std::unique_lock<std::mutex> l2;
+        };
+        
+        std::vector<std::shared_ptr<QueryHandle>> toWake;
+        DualLock lk(this->workerM, this->queueM);
         this->workerCV.wait(lk, [this] { return this->workerReady; });
         // process queue
-        std::lock_guard qlk(this->queueM);
+        //std::lock_guard qlk(this->queueM);
         while (!this->queue.empty()) {
             std::shared_ptr<QueryHandle> qH = std::move(this->queue.front());
             this->queue.pop();
             // process query
             qH->result = this->impl->query(qH->query);
 
-            qH->wake();
+            toWake.push_back(std::move(qH));
+            //qH->wake();
         }
         this->workerReady = false;
+        lk.unlock();
+        for (auto& qH : toWake)
+        {
+            qH->wake();
+        }
     }
     
     this->impl.reset();
