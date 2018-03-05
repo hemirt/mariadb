@@ -129,9 +129,9 @@ MariaDBImpl::query(const Query<MariaDB_detail::Values>& query)
                             hemirt::DB::DefaultVal, -> default
                             hemirt::DB::NullVal, -> null (auto generate)
                             std::int8_t, -> MYSQL_TYPE_TINY (signed char)
-                            std::int16_t, -> MYSQL_TYPE_SMALLINT
-                            std::int32_t, -> MYSQL_TYPE_INT
-                            std::int64_t, -> MYSQL_TYPE_BIGINT
+                            std::int16_t, -> MYSQL_TYPE_SHORT
+                            std::int32_t, -> MYSQL_TYPE_LONG
+                            std::int64_t, -> MYSQL_TYPE_LONGLONG
                             std::uint8_t, -> unsigned ^
                             std::uint16_t, -> unsigned ^
                             std::uint32_t, -> unsigned ^

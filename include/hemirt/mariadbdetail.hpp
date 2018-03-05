@@ -116,7 +116,7 @@ class DefaultVal
         , type(MYSQL_TYPE_LONGLONG)
     {};
     
-    DefaultVal(std::string)
+    DefaultVal(const std::string&)
         : isSigned(false)
         , type(MYSQL_TYPE_STRING)
     {};
