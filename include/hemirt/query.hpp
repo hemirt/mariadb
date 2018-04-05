@@ -59,6 +59,7 @@ public:
     std::string getSql() &&;
 
     const std::vector<Values>& getVals() const &;
+    std::vector<Values>& getVals() &;
     std::vector<Values> getVals() &&;
 
     void setSqlVals(std::string sql_, std::vector<Values> vals_);
@@ -110,6 +111,14 @@ Query<Values>::getVals() const &
 {
     return this->vals;
 }
+
+template <typename Values>
+std::vector<Values>&
+Query<Values>::getVals() &
+{
+    return this->vals;
+}
+
 
 template <typename Values>
 std::vector<Values>

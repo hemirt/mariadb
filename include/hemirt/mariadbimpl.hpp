@@ -24,7 +24,7 @@ public:
 
     std::string handleError();
 
-    Result query(const Query<MariaDB_detail::Values>& query);
+    Result query(Query<MariaDB_detail::Values>& query);
 
 private:
     MYSQL* mysql;
