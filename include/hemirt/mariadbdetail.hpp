@@ -22,6 +22,7 @@ struct are_same : std::conjunction<std::is_same<decltype(T), decltype(Ts)>...> {
     
 class NullVal
 {
+public:
     NullVal(std::int8_t)
         : isSigned(true)
         , type(MYSQL_TYPE_TINY)
@@ -76,6 +77,7 @@ class NullVal
 
 class DefaultVal
 {
+public:
     DefaultVal(std::int8_t)
         : isSigned(true)
         , type(MYSQL_TYPE_TINY)
