@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <byte>
 
 namespace hemirt {
 namespace DB {
@@ -71,12 +72,26 @@ public:
     void clear();
 
     bool isValid() const;
-
+    
+    template<typename...Types>
+    void setBuffer(std::vector<Types>&&...vecs);
+    
 private:
     bool valid = true;
     std::string sql;
     std::vector<Values> vals;
+    // will store std::vector<type>...
+    std::vector<std::byte> buf;
 };
+
+template<typename Values>
+template<typename...Types>
+setBuffer(std::vector<Types>&&...vecs)
+{
+    
+}
+
+
 
 template <typename Values>
 Query<Values>::Query(std::string sql_, std::vector<Values> vals_)
