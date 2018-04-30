@@ -47,6 +47,64 @@ operator<<(std::ostream& os, QueryType qt)
     return os;
 }
 
+enum class MysqlType {
+    /*
+    std::int8_t, -> MYSQL_TYPE_TINY (signed char)
+    std::int16_t, -> MYSQL_TYPE_SHORT
+    std::int32_t, -> MYSQL_TYPE_LONG
+    std::int64_t, -> MYSQL_TYPE_LONGLONG
+    std::uint8_t, -> unsigned ^
+    std::uint16_t, -> unsigned ^
+    std::uint32_t, -> unsigned ^
+    std::uint64_t, -> unsigned ^
+    std::string -> MYSQL_TYPE_STRING (char[])
+    */
+    mytiny,
+    myshort,
+    mylong,
+    mylonglong,
+    myutiny,
+    myushort,
+    myulong,
+    myulonglong,
+    mystring,
+    NUM_TYPES
+};
+
+template<typename cvrefT> 
+MysqlType TypeToIndex()
+{
+    using T = typename std::remove_cv_t<typename std::remove_reference_t<cvrefT>>;
+    if constexpr (std::is_same_v<T, std::int8_t>) return MysqlType::mytiny;
+    if constexpr (std::is_same_v<T, std::int16_t>) return MysqlType::myshort;
+    if constexpr (std::is_same_v<T, std::int32_t>) return MysqlType::mylong;
+    if constexpr (std::is_same_v<T, std::int64_t>) return MysqlType::mylonglong;
+    if constexpr (std::is_same_v<T, std::uint8_t>) return MysqlType::myutiny;
+    if constexpr (std::is_same_v<T, std::uint16_t>) return MysqlType::myushort;
+    if constexpr (std::is_same_v<T, std::uint32_t>) return MysqlType::myulong;
+    if constexpr (std::is_same_v<T, std::uint64_t>) return MysqlType::myulonglong;
+    if constexpr (std::is_same_v<T, std::string>) return MysqlType::mystring;
+    if constexpr (std::is_same_v<T, char[]>) return MysqlType::mystring;
+    if constexpr (std::is_same_v<T, char*>) return MysqlType::mystring;
+    return NUM_TYPES;
+}template<typename cvrefT> 
+MysqlType TypeToIndex()
+{
+    using T = typename std::remove_cv_t<typename std::remove_reference_t<cvrefT>>;
+    if constexpr (std::is_same_v<T, std::int8_t>) return MysqlType::mytiny;
+    if constexpr (std::is_same_v<T, std::int16_t>) return MysqlType::myshort;
+    if constexpr (std::is_same_v<T, std::int32_t>) return MysqlType::mylong;
+    if constexpr (std::is_same_v<T, std::int64_t>) return MysqlType::mylonglong;
+    if constexpr (std::is_same_v<T, std::uint8_t>) return MysqlType::myutiny;
+    if constexpr (std::is_same_v<T, std::uint16_t>) return MysqlType::myushort;
+    if constexpr (std::is_same_v<T, std::uint32_t>) return MysqlType::myulong;
+    if constexpr (std::is_same_v<T, std::uint64_t>) return MysqlType::myulonglong;
+    if constexpr (std::is_same_v<T, std::string>) return MysqlType::mystring;
+    if constexpr (std::is_same_v<T, char[]>) return MysqlType::mystring;
+    if constexpr (std::is_same_v<T, char*>) return MysqlType::mystring;
+    return NUM_TYPES;
+}
+
 template <typename Values>
 class Query
 {
@@ -82,16 +140,60 @@ private:
     std::vector<Values> vals;
     // will store std::vector<type>...
     std::vector<std::byte> buf;
+    std::size_t rowSize{0};
+    std::vector<MysqlType> types;
 };
 
 template<typename Values>
 template<typename...Types>
 setBuffer(std::vector<Types>&&...vecs)
 {
+    auto sizeCalc = [this] (const auto& vec) mutable -> std::size_t {
+        using itemType = typename std::remove_cv_t<typename std::remove_reference_t<decltype(vec)>>::value_type;
+        std::size_t retsize{0};
+        if constexpr (std::is_same_v<itemType, std::string>) {
+            std::size_t maxItemSize{0};
+            for (const auto& item : vec) {
+                maxItemSize = std::max(item.size(), maxItemSize);
+            }
+            // add a byte for null terminator of the largest item
+            maxItemSize += 1;
+            this->rowSize += maxItemSize;
+            retsize = maxItemSize * vec.size();
+        } else {
+            this->rowSize += sizeof(itemType);
+            retsize = sizeof(itemType) * vec.size();
+        }
+        this->types.push_back(TypeToIndex<itemType>());
+        return retsize;
+    };
+    auto size = (sizeCalc(vecs) + ...);
+    this->buf.reserve(size);
+    std::cout << "reserve: " << size << std::endl;
     
+    auto copy = [this, curpos = this->buf.data()](const auto& vec) mutable {
+        using itemType = typename std::remove_cv_t<typename std::remove_reference_t<decltype(vec)>>::value_type;
+        if constexpr (std::is_same_v<itemType, std::string>) {
+            std::size_t maxItemSize{0};
+            for (const auto& item : vec) {
+                maxItemSize = std::max(item.size(), maxItemSize);
+            }
+            // add a byte for null terminator of the largest item
+            maxItemSize += 1;
+            
+            for (const auto& item : vec) {
+                // copy including the null terminator
+                std::memcpy(curpos, item.c_str(), item.size() + 1);
+                curpos += maxItemSize;
+            }
+        } else {
+            auto copysize = sizeof(itemType) * vec.size();
+            std::memcpy(curpos, vec.data(), copysize);
+            curpos += copysize;
+        }
+    };
+    (copy(vecs), ...);
 }
-
-
 
 template <typename Values>
 Query<Values>::Query(std::string sql_, std::vector<Values> vals_)
