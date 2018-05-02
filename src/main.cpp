@@ -125,30 +125,8 @@ main(int argc, char** argv)
         showRes(res);
     }
     */
+    /*
     
-    auto showRes = [](auto& res) {
-                std::cout << "res value type: " << res.getType() << std::endl;
-                if (auto pval = res.returned(); pval) {
-                    std::cout << "table returned" << std::endl;
-                    if (pval->data.empty()) {
-                        std::cout << std::endl;
-                    }
-                    for (const auto& row : pval->data) {
-                        for (const auto& column : row) {
-                            if (column.first) {
-                                std::cout << column.second << " ";
-                            } else {
-                                std::cout << "NULL";
-                            }
-                        }
-                        std::cout << std::endl;
-                    }
-                } else if (auto eval = res.error(); eval) { 
-                    std::cout << eval->error() << std::endl;
-                } else if (auto aval = res.affected(); aval) {
-                    std::cout << aval->affected() << std::endl;
-                }
-            };
     {
         hemirt::DB::Query<hemirt::DB::MariaDB::Values> q(
             "CREATE TABLE IF NOT EXISTS `Keepo` (`index` INT AUTO_INCREMENT, `name` CHAR(10), PRIMARY KEY(`index`))");
@@ -182,6 +160,43 @@ main(int argc, char** argv)
         auto res = db.executeQuery(q);
         showRes(res);
     }
+    */
+    
+    auto showRes = [](auto& res) {
+                std::cout << "res value type: " << res.getType() << std::endl;
+                if (auto pval = res.returned(); pval) {
+                    std::cout << "table returned" << std::endl;
+                    if (pval->data.empty()) {
+                        std::cout << std::endl;
+                    }
+                    for (const auto& row : pval->data) {
+                        for (const auto& column : row) {
+                            if (column.first) {
+                                std::cout << column.second << " ";
+                            } else {
+                                std::cout << "NULL";
+                            }
+                        }
+                        std::cout << std::endl;
+                    }
+                } else if (auto eval = res.error(); eval) { 
+                    std::cout << eval->error() << std::endl;
+                } else if (auto aval = res.affected(); aval) {
+                    std::cout << aval->affected() << std::endl;
+                }
+            };
+            
+    std::vector<std::uint64_t> ids{240, 241, 242, 243};
+    std::vector<std::string> userids{"1234", "2345", "3456", "1232131"};      
+    std::vector<std::string> names{"pajlada", "nuuls", "fourtf", "nclnat"};
+    std::vector<std::int32_t> levels{0, 0, 0, 0};
+    
+    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("INSERT INTO `users` (`id`, `userid`, `username`, `displayname`, `level`) VALUES (?, ?, ?, ?, ?)");
+    q.setBuffer(ids, userids, names, names, levels);
+    q.type = hemirt::DB::QueryType::PARAMETER;
+    q.printBuf();
+    auto res = db.executeQuery(q);
+    showRes(res);
 
     return 0;
 }

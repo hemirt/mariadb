@@ -24,4 +24,5 @@ set(hemirtmariadbinterface
 )
 
 add_library(database ${hemirtmariadbinterface})
-target_link_libraries(database ${Boost_LIBRARIES} mariadb)
+find_library(MARIADB NAMES mariadb libmariadb libmariadb.so mariadb/mariadb mariadb/libmariadb mariadb/libmariadb.so)
+target_link_libraries(database ${Boost_LIBRARIES} ${MARIADB})

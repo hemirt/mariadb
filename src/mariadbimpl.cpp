@@ -139,23 +139,25 @@ MariaDBImpl::query(Query<MariaDB_detail::Values>& query)
                             std::string -> MYSQL_TYPE_STRING (char[])
                             >;*/
             
-            auto& params = query.getVals();
-            const auto numparams = params.size();
-            if (numparams == 0) {
+            std::cout << "AAAAAAAAAAAAAAAA" << std::endl;
+            unsigned int rowcount = query.getRowCount();
+            if (rowcount == 0) {
                 return ErrorResult("No values to parametrize");
             }
+            const auto columncount = query.getColumnCount();
             const auto& sql = query.getSql();            
-            if (numparams != std::count(sql.begin(), sql.end(), '?')) {
-                return ErrorResult("Number of \'?\' and values(params) dont match");
+            if (columncount != std::count(sql.begin(), sql.end(), '?')) {
+                return ErrorResult("Number of \'?\' and columns dont match");
             }
-            MYSQL_BIND bind[numparams];            
+            MYSQL_BIND bind[columncount];            
             MYSQL_STMT *stmt = mysql_stmt_init(this->mysql);
             if (mysql_stmt_prepare(stmt, sql.c_str(), sql.size())) {
                 const auto b = mysql_stmt_close(stmt);
                 return ErrorResult("statement error: " + this->handleError() + " \'" + std::to_string(b) + "\' " + mysql_stmt_error(stmt));
             }
-            std::memset(bind, 0, sizeof(MYSQL_BIND) * numparams);
+            std::memset(bind, 0, sizeof(MYSQL_BIND) * columncount);
             
+            /*
             struct {
                 using Type = char;
                 Type nts = STMT_INDICATOR_NTS; // string is null terminated
@@ -165,93 +167,38 @@ MariaDBImpl::query(Query<MariaDB_detail::Values>& query)
                 Type ignore = STMT_INDICATOR_IGNORE; // skip update of column
                 char is_null = true; // its a c library and uses my_bool = char
             } static ind;
-            
-            long unsigned int lengths[numparams] = {0};
-            for (std::size_t i = 0; i < numparams; ++i) {
-                auto vindex = params[i].index();
-                switch (vindex) {
-                    case 0: { // std::monostate
-                        mysql_stmt_close(stmt);
-                        throw std::runtime_error("MariaDBImpl::query Variant index \"vindex\" is zero, that is std::monospace");
-                    } break;
-                    case 1: { // hemirt::DB::DefaultVal, -> default
-                        auto& val = std::get<1>(params[i]);
-                        bind[i].buffer_type = val.type;
-                        bind[i].u.indicator = &ind.def;
-                        bind[i].is_unsigned = !val.isSigned;
-                    } break;
-                    case 2: { // hemirt::DB::NullVal, -> null (auto generate)
-                        auto& val = std::get<2>(params[i]);
-                        bind[i].buffer_type = val.type;
-                        bind[i].u.indicator = &ind.null;
-                        bind[i].is_unsigned = !val.isSigned;
-                        bind[i].is_null = &ind.is_null;
-                    } break;
-                    case 3: { // std::int8_t, -> MYSQL_TYPE_TINY (signed char)
-                        auto& val = std::get<3>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_TINY;
-                        bind[i].buffer = (char *) &val;
-                    } break;
-                    case 4: { // std::int16_t, -> MYSQL_TYPE_SHORT
-                        auto& val = std::get<4>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_SHORT;
-                        bind[i].buffer = (char *) &val;
-                    } break;
-                    case 5: { // std::int32_t, -> MYSQL_TYPE_LONG
-                        auto& val = std::get<5>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_LONG;
-                        bind[i].buffer = (char *) &val;
-                    } break;
-                    case 6: { // std::int64_t, -> MYSQL_TYPE_LONGLONG
-                        auto& val = std::get<6>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
-                        bind[i].buffer = (char *) &val;
-                    } break;
-                    case 7: { // std::uint8_t, -> unsigned ^
-                        auto& val = std::get<7>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_TINY;
-                        bind[i].buffer = (char *) &val;
-                        bind[i].is_unsigned = true;
-                    } break;
-                    case 8: { // std::uint16_t, -> unsigned ^
-                        auto& val = std::get<8>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_SHORT;
-                        bind[i].buffer = (char *) &val;
-                        bind[i].is_unsigned = true;
-                    } break;
-                    case 9: { // std::uint32_t, -> unsigned ^
-                        auto& val = std::get<9>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_LONG;
-                        bind[i].buffer = (char *) &val;
-                        bind[i].is_unsigned = true;
-                    } break;
-                    case 10: { // std::uint64_t, -> unsigned ^
-                        auto& val = std::get<10>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
-                        bind[i].buffer = (char *) &val;
-                        bind[i].is_unsigned = true;
-                    } break;
-                    case 11: { // std::string -> MYSQL_TYPE_STRING (char[])
-                        std::string& val = std::get<11>(params[i]);
-                        bind[i].buffer_type = MYSQL_TYPE_STRING;
-                        char *bf = val.data();
-                        bind[i].buffer = static_cast<void*>(bf);
-                        lengths[i] = val.size();
-                        bind[i].length = &lengths[i];
-                    } break;                    
-                    default: {
-                        mysql_stmt_close(stmt);
-                        throw std::runtime_error("MariaDBImpl::query Variant Index \"vindex\" not handled");
-                    } break;
+            */
+            const auto& infos = query.getInfos();
+            for (std::size_t i = 0; i < columncount; ++i) {
+                auto p = ConvertToMysqlBufferType(infos[i].type);
+                bind[i].buffer_type = p.first;
+                bind[i].is_unsigned = p.second;
+                /*if (p.first == MYSQL_TYPE_STRING) {
+                    bind[i].buffer = reinterpret_cast<char **>(const_cast<std::byte**>(&infos[i].begin));
+                } else {*/
+                    bind[i].buffer = reinterpret_cast<char *>(infos[i].begin);
+                //}
+                if (!infos[i].sizes.empty()) {
+                    bind[i].length = const_cast<unsigned long *>(infos[i].sizes.data());
                 }
             }
             
+            if(mysql_stmt_attr_set(stmt, STMT_ATTR_ARRAY_SIZE, &rowcount)) {
+                auto e = ErrorResult("attr array size error: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_stmt_close(stmt);
+                return e;
+            }
+            
             if (mysql_stmt_bind_param(stmt, bind)) {
-                return ErrorResult("statement error bind: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                auto e = ErrorResult("statement error bind: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_stmt_close(stmt);
+                return e;
             }
             
             if (mysql_stmt_execute(stmt)) {
-                return ErrorResult("statement error execute: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                auto e = ErrorResult("statement error execute: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_stmt_close(stmt);
+                return e;
             }
             
             auto affected_rows = mysql_stmt_affected_rows(stmt);
