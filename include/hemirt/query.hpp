@@ -146,7 +146,7 @@ inline std::pair<decltype(MYSQL_TYPE_TINY), bool> ConvertToMysqlBufferType(const
 struct Info
 {
     std::size_t pos{0};
-    std::byte* begin;
+    std::byte* begin = nullptr;
     // unsigned long is the type mysql expects for sizes
     std::vector<unsigned long> sizes;
     MysqlType type;
@@ -249,7 +249,7 @@ void Query<Values>::setBuffer(const std::vector<Types>&...vecs)
     this->bufsize = (sizeCalc(vecs) + ...);
     this->buf.reserve(this->bufsize);
     this->strings.reserve(this->stringsizes);
-    std::cout << "bufsize: " << this->bufsize << std::endl;
+    std::cout << "bufsize: " << this->bufsize << "\nrowcount: " << this->rowcount << "\ncolumncount: " << this->columncount << std::endl;
     
     auto copy = [this, curpos = this->buf.data(), stringpos = this->strings.data(), pos = std::size_t{0}](const auto& vec) mutable {
         using itemType = typename std::remove_cv_t<typename std::remove_reference_t<decltype(vec)>>::value_type;
@@ -257,7 +257,6 @@ void Query<Values>::setBuffer(const std::vector<Types>&...vecs)
         if constexpr (std::is_same_v<itemType, std::string>) {
             for (const auto& item : vec) {
                 // copy including the null terminator
-                this->strings.reserve(this->strings.size() + item.size());
                 std::memcpy(stringpos, item.c_str(), item.size());
                 std::memcpy(curpos, &stringpos, sizeof(char*));
                 stringpos += item.size();
