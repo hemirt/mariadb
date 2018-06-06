@@ -146,17 +146,19 @@ public:
 
 namespace MariaDB_detail {
 
+/*
 using Values = std::variant<std::monostate, ::hemirt::DB::DefaultVal, ::hemirt::DB::NullVal, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, std::string>;
+*/
 
 class QueryHandle
 {
 public:
-    QueryHandle(Query<Values>&& q)
+    QueryHandle(Query&& q)
         : query(std::move(q))
     {
     }
 
-    Query<Values> query;
+    Query query;
     Result result;
 
     std::unique_lock<std::mutex>

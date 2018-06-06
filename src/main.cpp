@@ -39,7 +39,7 @@ main(int argc, char** argv)
     cred = nullptr;
     
     /*
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("SHOW TABLES");
+    hemirt::DB::Query q("SHOW TABLES");
     q.type = hemirt::DB::QueryType::RAWSQL;
 
     db.executeQuery(q);
@@ -68,7 +68,7 @@ main(int argc, char** argv)
                 }
             };
             
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q2(
+    hemirt::DB::Query q2(
         "CREATE TABLE IF NOT EXISTS `Keepo` (`index` INT AUTO_INCREMENT, `name` CHAR(10), PRIMARY KEY(`index`))");
     q2.type = hemirt::DB::QueryType::RAWSQL;
     {
@@ -81,21 +81,21 @@ main(int argc, char** argv)
         showRes(res);
     }
     
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q4("INSERT INTO `Keepo` (`name`) VALUES (\'nuuls\'), (\'fourtf\'), (\'hemirt\'), (\'pajlada\')");
+    hemirt::DB::Query q4("INSERT INTO `Keepo` (`name`) VALUES (\'nuuls\'), (\'fourtf\'), (\'hemirt\'), (\'pajlada\')");
     q4.type = hemirt::DB::QueryType::RAWSQL;
     {
         auto res = db.executeQuery(q4);
         showRes(res);
     }
     
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q5("SELECT * FROM `Keepo`");
+    hemirt::DB::Query q5("SELECT * FROM `Keepo`");
     q5.type = hemirt::DB::QueryType::RAWSQL;
     {
         auto res = db.executeQuery(q5);
         showRes(res);
     }
     
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q3("DROP TABLE IF EXISTS `Keepo`");
+    hemirt::DB::Query q3("DROP TABLE IF EXISTS `Keepo`");
     q3.type = hemirt::DB::QueryType::RAWSQL;
     {
         auto res = db.executeQuery(q3);
@@ -108,7 +108,7 @@ main(int argc, char** argv)
     }
 
     /*
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q4("Keepo");
+    hemirt::DB::Query q4("Keepo");
     q4.type = hemirt::DB::QueryType::RAWSQL;
 
     auto result = db.executeQuery(q4);
@@ -117,18 +117,11 @@ main(int argc, char** argv)
     } else {
         std::cout << "Erroneous OMEGALUL" << " " << pval->error() << std::endl;
     }
-    */
-    /*
-    std::vector<std::string> v{"\'SELECT `* FROM Users W`HERE\' Na\"me =\"\' + \nuName + \'\" AND Pass =\"\' + uPass + \'\"\'", "Keepo `, ` \' \" K\"", "OMEGALUL` OMEGALUL2\" OMEGALUL3 \'OMG"};
-    {
-        auto res = db.escapeString(std::move(v));
-        showRes(res);
-    }
-    */
+    */   
     /*
     
     {
-        hemirt::DB::Query<hemirt::DB::MariaDB::Values> q(
+        hemirt::DB::Query q(
             "CREATE TABLE IF NOT EXISTS `Keepo` (`index` INT AUTO_INCREMENT, `name` CHAR(10), PRIMARY KEY(`index`))");
         q.type = hemirt::DB::QueryType::RAWSQL;
         auto res = db.executeQuery(q);
@@ -136,26 +129,26 @@ main(int argc, char** argv)
     }
     
     {
-        hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", "forsen", std::uint32_t{5}});
+        hemirt::DB::Query q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", "forsen", std::uint32_t{5}});
         q.type = hemirt::DB::QueryType::PARAMETER;
         auto res = db.executeQuery(q);
         showRes(res);
     }
     {
-        hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", "forsen", std::uint8_t{5}});
+        hemirt::DB::Query q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", "forsen", std::uint8_t{5}});
         q.type = hemirt::DB::QueryType::PARAMETER;
         auto res = db.executeQuery(q);
         showRes(res);
     }
     {
-        hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", hemirt::DB::DefaultVal{std::uint32_t{}}, hemirt::DB::NullVal{std::int64_t{}}});
+        hemirt::DB::Query q("INSERT INTO `Keepo` (`name`) VALUES (?), (?), (?), (?)", {"hemirt", "pajlada", hemirt::DB::DefaultVal{std::uint32_t{}}, hemirt::DB::NullVal{std::int64_t{}}});
         q.type = hemirt::DB::QueryType::PARAMETER;
         auto res = db.executeQuery(q);
         showRes(res);
     }
     
     {
-        hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("DROP TABLE IF EXISTS `Keepo`");
+        hemirt::DB::Query q("DROP TABLE IF EXISTS `Keepo`");
         q.type = hemirt::DB::QueryType::RAWSQL;
         auto res = db.executeQuery(q);
         showRes(res);
@@ -172,7 +165,7 @@ main(int argc, char** argv)
                     for (const auto& row : pval->data) {
                         for (const auto& column : row) {
                             if (column.first) {
-                                std::cout << column.second << " ";
+                                std::cout << column.second << "\n";
                             } else {
                                 std::cout << "NULL";
                             }
@@ -186,16 +179,30 @@ main(int argc, char** argv)
                 }
             };
             
+    
     std::vector<std::uint64_t> ids{240, 241, 242, 243};
     std::vector<std::string> userids{"1234", "2345", "3456", "1232131"};      
     std::vector<std::string> names{"pajlada", "nuuls", "fourtf", "nclnat"};
     std::vector<std::int32_t> levels{0, 0, 0, 0};
     
-    hemirt::DB::Query<hemirt::DB::MariaDB::Values> q("INSERT INTO `users` (`id`, `userid`, `username`, `displayname`, `level`) VALUES (?, ?, ?, ?, ?)");
+    hemirt::DB::Query q("INSERT INTO `users` (`id`, `userid`, `username`, `displayname`, `level`) VALUES (?, ?, ?, ?, ?)");
     q.setBuffer(ids, userids, names, names, levels);
     q.type = hemirt::DB::QueryType::PARAMETER;
-    q.printBuf();
     auto res = db.executeQuery(q);
+    showRes(res);
+    
+    
+    std::vector<std::string> v{"\'SELECT `* FROM Users W`HERE\' Na\"me =\"\' + \nuName + \'\" AND Pass =\"\' + uPass + \'\"\'", "Keepo `, ` \' \" K\"", "OMEGALUL` OMEGALUL2\" OMEGALUL3 \'OMG"};
+    {
+        hemirt::DB::Query q("");
+        q.type = hemirt::DB::QueryType::ESCAPE;
+        q.setBuffer(v);
+        auto res = db.executeQuery(q);
+        showRes(res);
+    }
+    
+    std::cout << std::endl;
+    res = db.escapeString(v);
     showRes(res);
 
     return 0;

@@ -45,8 +45,6 @@ public:
 class MariaDB
 {
 public:
-    using Values = MariaDB_detail::Values;
-
     MariaDB(const Credentials& creds);
     MariaDB(Credentials&& creds);
     MariaDB(MariaDB&&) = delete;
@@ -56,12 +54,12 @@ public:
 
     ~MariaDB() noexcept;
 
-    Result executeQuery(Query<Values>&& query);
-    Result executeQuery(const Query<Values>& query);
+    Result executeQuery(Query&& query);
+    Result executeQuery(const Query& query);
 
     const std::string& getDB() const;
     
-    Result escapeString(std::vector<std::string>&& str);
+    Result escapeString(const std::vector<std::string>& str);
 
 private:
     void runWorker();

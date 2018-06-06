@@ -152,36 +152,24 @@ struct Info
     MysqlType type;
 };
 
-template <typename Values>
 class Query
 {
 public:
     QueryType type = QueryType::UNKNOWN;
 
-    Query(std::string sql, std::vector<Values> vals);
     Query(std::string sql);
 
     const std::string& getSql() const &;
     std::string getSql() &&;
 
-    const std::vector<Values>& getVals() const &;
-    std::vector<Values>& getVals() &;
-    std::vector<Values> getVals() &&;
-
-    void setSqlVals(std::string sql_, std::vector<Values> vals_);
     void setSql(std::string sql_);
-    void setVals(std::vector<Values> vals_);
 
     void clearSql();
-    void clearVals();
+    void clearBuffer();
     void clear();
-
-    bool isValid() const;
     
     template<typename...Types>
     void setBuffer(const std::vector<Types>&...vecs);
-    
-    void printBuf() const;
     
     const auto& getBuf() const {
         return this->buf;
@@ -201,9 +189,7 @@ public:
 
     
 private:
-    bool valid = true;
     std::string sql;
-    std::vector<Values> vals;
     std::vector<std::byte> buf;
     std::vector<char> strings;
     std::vector<Info> infos;
@@ -213,9 +199,9 @@ private:
     std::size_t stringsizes{0};
 };
 
-template<typename Values>
 template<typename...Types>
-void Query<Values>::setBuffer(const std::vector<Types>&...vecs)
+void
+Query::setBuffer(const std::vector<Types>&...vecs)
 {
     std::vector<std::size_t> vecsizes{(vecs.size(), ...)};
     if (!vecsizes.empty() && (std::adjacent_find(vecsizes.begin(), vecsizes.end(), std::not_equal_to<int>()) == vecsizes.end())) {
@@ -256,7 +242,6 @@ void Query<Values>::setBuffer(const std::vector<Types>&...vecs)
         this->infos[pos].begin = curpos;
         if constexpr (std::is_same_v<itemType, std::string>) {
             for (const auto& item : vec) {
-                // copy including the null terminator
                 std::memcpy(stringpos, item.c_str(), item.size());
                 std::memcpy(curpos, &stringpos, sizeof(char*));
                 stringpos += item.size();
@@ -272,10 +257,10 @@ void Query<Values>::setBuffer(const std::vector<Types>&...vecs)
     (copy(vecs), ...);
 }
 
-template<typename Values>
-void Query<Values>::printBuf() const
+/*
+void
+Query::printBuf() const
 {
-    /*
     std::cout << "bufsize: " << this->bufsize  << "\nrowcount: " << this->rowcount << "\ncolumncount: " << this->columncount << std::endl;
     for (int col = 0; col < this->columncount; ++col) {
         auto* beg = this->infos[col].begin;
@@ -329,108 +314,64 @@ void Query<Values>::printBuf() const
             }
         }
     }
-    */
 }
+*/
 
-template <typename Values>
-Query<Values>::Query(std::string sql_, std::vector<Values> vals_)
-    : sql(std::move(sql_))
-    , vals(std::move(vals_))
-{
-}
-
-template <typename Values>
-Query<Values>::Query(std::string sql_)
+inline Query::Query(std::string sql_)
     : sql(std::move(sql_))
 {
 }
 
-template <typename Values>
+inline
 const std::string&
-Query<Values>::getSql() const &
+Query::getSql() const &
 {
     return this->sql;
 }
 
-template <typename Values>
+inline
 std::string
-Query<Values>::getSql() &&
+Query::getSql() &&
 {
     return std::move(this->sql);
 }
 
-template <typename Values>
-const std::vector<Values>&
-Query<Values>::getVals() const &
-{
-    return this->vals;
-}
-
-template <typename Values>
-std::vector<Values>&
-Query<Values>::getVals() &
-{
-    return this->vals;
-}
-
-
-template <typename Values>
-std::vector<Values>
-Query<Values>::getVals() &&
-{
-    return std::move(this->vals);
-}
-
-template <typename Values>
+inline
 void
-Query<Values>::setSqlVals(std::string sql_, std::vector<Values> vals_)
-{
-    this->sql = std::move(sql_);
-    this->vals = std::move(vals_);
-}
-
-template <typename Values>
-void
-Query<Values>::setSql(std::string sql_)
+Query::setSql(std::string sql_)
 {
     this->sql = std::move(sql_);
 }
 
-template <typename Values>
+inline
 void
-Query<Values>::setVals(std::vector<Values> vals_)
-{
-    this->vals = std::move(vals_);
-}
-
-template <typename Values>
-void
-Query<Values>::clearSql()
+Query::clearSql()
 {
     this->sql.clear();
 }
 
-template <typename Values>
+inline
 void
-Query<Values>::clearVals()
+Query::clearBuffer()
 {
-    this->vals.clear();
+    this->buf.clear();
+    this->infos.clear();
+    this->strings.clear();
+    this->bufsize = 0;
+    this->rowcount = 0;
+    this->columncount = 0;
+    this->stringsizes = 0;
+    
 }
 
-template <typename Values>
+inline
 void
-Query<Values>::clear()
+Query::clear()
 {
     this->clearSql();
-    this->clearVals();
+    this->clearBuffer();
 }
 
-template <typename Values>
-bool
-Query<Values>::isValid() const
-{
-    return this->valid;
-}
 
 }  // namespace DB
 }  // namespace hemirt

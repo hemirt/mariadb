@@ -65,7 +65,7 @@ MariaDBImpl::handleError()
 }
 
 Result
-MariaDBImpl::query(Query<MariaDB_detail::Values>& query)
+MariaDBImpl::query(Query& query)
 {
     switch (query.type) {
         case QueryType::UNKNOWN: {
@@ -106,21 +106,24 @@ MariaDBImpl::query(Query<MariaDB_detail::Values>& query)
             }
         } break;
         case QueryType::ESCAPE: {
-            if (query.getVals().empty()) {
-                return ErrorResult("No values to escape");
+            const auto& infos = query.getInfos();
+            if (infos.size() != 1) {
+                return ErrorResult("Incorrect number of infos(vectors): " + std::to_string(infos.size()));
+            }
+            if (infos[0].type != MysqlType::mystring) {
+                return ErrorResult("MysqlType is not mystring");
             }
             std::vector<std::pair<bool, std::string>> retRow;
-            const auto& ref = query.getVals();
-            for (decltype(ref.size()) i = 0; i < ref.size(); ++i) {
-                if (auto strval = std::get_if<std::string>(&ref[i]); !strval) {
-                    return ErrorResult("Value at " + std::to_string(i) + " is not a string, the type is " + std::to_string(ref[i].index()));
-                } else {
-                    std::vector<char> vec;
-                    vec.reserve(strval->size() * 2 + 1);
-                    mysql_real_escape_string(this->mysql, vec.data(), strval->c_str(), strval->size());
+            {
+                std::vector<char> vec;
+                for (std::size_t i = 0; i < infos[0].sizes.size(); ++i) {
+                    vec.reserve(infos[0].sizes[i] * 2 + 1);
+                    mysql_real_escape_string(this->mysql, vec.data(), *reinterpret_cast<char **>(infos[0].begin + i * sizeof(char *)), infos[0].sizes[i]);
                     retRow.push_back({true, std::string(std::move(vec.data()))});
+                    vec.clear();
                 }
             }
+            
             return ReturnedRowsResult{std::vector<std::vector<std::pair<bool, std::string>>>{retRow}};
         } break;
         case QueryType::PARAMETER: {
