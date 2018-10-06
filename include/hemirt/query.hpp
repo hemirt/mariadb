@@ -235,7 +235,7 @@ Query::setBuffer(const std::vector<Types>&...vecs)
     this->bufsize = (sizeCalc(vecs) + ...);
     this->buf.reserve(this->bufsize);
     this->strings.reserve(this->stringsizes);
-    std::cout << "bufsize: " << this->bufsize << "\nrowcount: " << this->rowcount << "\ncolumncount: " << this->columncount << std::endl;
+    //std::cout << "bufsize: " << this->bufsize << "\nrowcount: " << this->rowcount << "\ncolumncount: " << this->columncount << std::endl;
     
     auto copy = [this, curpos = this->buf.data(), stringpos = this->strings.data(), pos = std::size_t{0}](const auto& vec) mutable {
         using itemType = typename std::remove_cv_t<typename std::remove_reference_t<decltype(vec)>>::value_type;

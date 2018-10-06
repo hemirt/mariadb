@@ -26,47 +26,47 @@ public:
     NullVal(std::int8_t)
         : isSigned(true)
         , type(MYSQL_TYPE_TINY)
-    {};
+    {}
     
     NullVal(std::int16_t)
         : isSigned(true)
         , type(MYSQL_TYPE_SHORT)
-    {};
+    {}
     
     NullVal(std::int32_t)
         : isSigned(true)
         , type(MYSQL_TYPE_LONG)
-    {};
+    {}
     
     NullVal(std::int64_t)
         : isSigned(true)
         , type(MYSQL_TYPE_LONGLONG)
-    {};
+    {}
     
     NullVal(std::uint8_t)
         : isSigned(false)
         , type(MYSQL_TYPE_TINY)
-    {};
+    {}
     
     NullVal(std::uint16_t)
         : isSigned(false)
         , type(MYSQL_TYPE_SHORT)
-    {};
+    {}
     
     NullVal(std::uint32_t)
         : isSigned(false)
         , type(MYSQL_TYPE_LONG)
-    {};
+    {}
     
     NullVal(std::uint64_t)
         : isSigned(false)
         , type(MYSQL_TYPE_LONGLONG)
-    {};
+    {}
     
     NullVal(std::string)
         : isSigned(false)
         , type(MYSQL_TYPE_STRING)
-    {};
+    {}
     
         
     
@@ -81,47 +81,47 @@ public:
     DefaultVal(std::int8_t)
         : isSigned(true)
         , type(MYSQL_TYPE_TINY)
-    {};
+    {}
     
     DefaultVal(std::int16_t)
         : isSigned(true)
         , type(MYSQL_TYPE_SHORT)
-    {};
+    {}
     
     DefaultVal(std::int32_t)
         : isSigned(true)
         , type(MYSQL_TYPE_LONG)
-    {};
+    {}
     
     DefaultVal(std::int64_t)
         : isSigned(true)
         , type(MYSQL_TYPE_LONGLONG)
-    {};
+    {}
     
     DefaultVal(std::uint8_t)
         : isSigned(false)
         , type(MYSQL_TYPE_TINY)
-    {};
+    {}
     
     DefaultVal(std::uint16_t)
         : isSigned(false)
         , type(MYSQL_TYPE_SHORT)
-    {};
+    {}
     
     DefaultVal(std::uint32_t)
         : isSigned(false)
         , type(MYSQL_TYPE_LONG)
-    {};
+    {}
     
     DefaultVal(std::uint64_t)
         : isSigned(false)
         , type(MYSQL_TYPE_LONGLONG)
-    {};
+    {}
     
     DefaultVal(const std::string&)
         : isSigned(false)
         , type(MYSQL_TYPE_STRING)
-    {};
+    {}
     
         
     
