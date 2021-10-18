@@ -180,14 +180,12 @@ main(int argc, char** argv)
             };
             
     
-    std::vector<std::uint64_t> ids{240, 241, 242, 243};
-    std::vector<std::string> userids{"1234", "2345", "3456", "1232131"};      
-    std::vector<std::string> names{"pajlada", "nuuls", "fourtf", "nclnat"};
-    std::vector<std::int32_t> levels{0, 0, 0, 0};
+    std::vector<int> ids{1};      
     
-    hemirt::DB::Query q("INSERT INTO `users` (`id`, `userid`, `username`, `displayname`, `level`) VALUES (?, ?, ?, ?, ?)");
-    q.setBuffer(ids, userids, names, names, levels);
+    hemirt::DB::Query q("SELECT userid, username FROM `users` WHERE id = ?");
+    q.setBuffer(ids);
     q.type = hemirt::DB::QueryType::PARAMETER;
+    q.setRetTypes({hemirt::DB::MysqlType::mystring, hemirt::DB::MysqlType::mystring});
     auto res = db.executeQuery(q);
     showRes(res);
     
