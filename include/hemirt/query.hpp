@@ -170,6 +170,12 @@ public:
     
     template<typename...Types>
     void setBuffer(const std::vector<Types>&...vecs);
+    void setRetTypes(std::vector<MysqlType>&& types) {
+        this->retTypes = std::move(types);
+    }
+    void setRetTypes(const std::vector<MysqlType>& types) {
+        this->retTypes = types;
+    }
     
     const auto& getBuf() const {
         return this->buf;
@@ -186,6 +192,9 @@ public:
     const auto& getColumnCount() const {
         return this->columncount;
     }
+    const auto& getRetTypes() const {
+        return this->retTypes;
+    }
 
     
 private:
@@ -193,6 +202,7 @@ private:
     std::vector<std::byte> buf;
     std::vector<char> strings;
     std::vector<Info> infos;
+    std::vector<MysqlType> retTypes;
     std::size_t bufsize{0};
     std::size_t rowcount{0};
     std::size_t columncount{0};

@@ -36,6 +36,9 @@ MariaDBImpl::MariaDBImpl(const char* host, const char* user, const char* passwd,
         mysql_library_end();
         throw std::runtime_error(error);
     }
+    
+    my_bool mytrue = 1;
+    mysql_options(this->mysql, MYSQL_OPT_RECONNECT, &mytrue);
 
     std::cout << "MARIADBIMPL constr" << std::endl;
 }
@@ -141,8 +144,7 @@ MariaDBImpl::query(Query& query)
                             std::uint64_t, -> unsigned ^
                             std::string -> MYSQL_TYPE_STRING (char[])
                             >;*/
-            
-            std::cout << "AAAAAAAAAAAAAAAA" << std::endl;
+
             unsigned int rowcount = query.getRowCount();
             if (rowcount == 0) {
                 return ErrorResult("No values to parametrize");
@@ -152,12 +154,14 @@ MariaDBImpl::query(Query& query)
             if (columncount != std::count(sql.begin(), sql.end(), '?')) {
                 return ErrorResult("Number of \'?\' and columns dont match");
             }
-            MYSQL_BIND bind[columncount];            
+         
             MYSQL_STMT *stmt = mysql_stmt_init(this->mysql);
             if (mysql_stmt_prepare(stmt, sql.c_str(), sql.size())) {
-                const auto b = mysql_stmt_close(stmt);
-                return ErrorResult("statement error: " + this->handleError() + " \'" + std::to_string(b) + "\' " + mysql_stmt_error(stmt));
+                auto e = ErrorResult("statement prepare error: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_stmt_close(stmt);
+                return e;
             }
+            MYSQL_BIND bind[columncount];   
             std::memset(bind, 0, sizeof(MYSQL_BIND) * columncount);
             
             /*
@@ -186,32 +190,124 @@ MariaDBImpl::query(Query& query)
                 }
             }
             
+            /*
             if(mysql_stmt_attr_set(stmt, STMT_ATTR_ARRAY_SIZE, &rowcount)) {
                 auto e = ErrorResult("attr array size error: " + this->handleError() + " " + mysql_stmt_error(stmt));
                 mysql_stmt_close(stmt);
                 return e;
             }
-            
+            */
             if (mysql_stmt_bind_param(stmt, bind)) {
                 auto e = ErrorResult("statement error bind: " + this->handleError() + " " + mysql_stmt_error(stmt));
                 mysql_stmt_close(stmt);
                 return e;
             }
             
+            int updatemaxlength = 1;
+            if(mysql_stmt_attr_set(stmt, STMT_ATTR_UPDATE_MAX_LENGTH, &updatemaxlength)) {
+                auto e = ErrorResult("attr array size error: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_stmt_close(stmt);
+                return e;    
+            }
+            
+            auto metadata = mysql_stmt_result_metadata(stmt);
+            unsigned int ret_num_fields = 0;
+            if (metadata) {
+                ret_num_fields = mysql_num_fields(metadata);
+            }
+        
             if (mysql_stmt_execute(stmt)) {
                 auto e = ErrorResult("statement error execute: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                mysql_free_result(metadata);
                 mysql_stmt_close(stmt);
                 return e;
             }
             
-            auto affected_rows = mysql_stmt_affected_rows(stmt);
-            
-            // stmt_close invalidates statement
-            if (mysql_stmt_close(stmt)) {
-                return ErrorResult("statement error close: " + this->handleError() + " ");
+            if (ret_num_fields) {
+                const auto& retTypes = query.getRetTypes();
+                if (ret_num_fields != retTypes.size()) {
+                    mysql_free_result(metadata);
+                    mysql_stmt_close(stmt);
+                    return ErrorResult("Number of return types and actual value do not match");
+                }
+                
+                MYSQL_BIND ret_bind[ret_num_fields];
+                std::memset(ret_bind, 0, sizeof(MYSQL_BIND) * ret_num_fields);
+                unsigned long length[ret_num_fields];
+                std::memset(length, 0, sizeof(unsigned long)*ret_num_fields);
+                bool isNull[ret_num_fields];
+                std::memset(isNull, 0, sizeof(bool)*ret_num_fields);
+                
+                if (mysql_stmt_store_result(stmt)) {
+                    auto e = ErrorResult("stmt store error: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                    mysql_free_result(metadata);
+                    mysql_stmt_close(stmt);
+                    return e;
+                }
+                
+                auto fields = mysql_fetch_fields(metadata);
+                if (!fields) {
+                    auto e = ErrorResult("statement error mysql_fetch_fields : " + this->handleError() + " " + mysql_stmt_error(stmt));
+                    mysql_free_result(metadata);
+                    mysql_stmt_close(stmt);
+                    return e;
+                }
+                
+                std::vector<std::string> retbufs{retTypes.size(), std::string{}};
+                decltype(retTypes.size()) i = 0;
+                for (const auto& type : retTypes) {
+                    auto p = ConvertToMysqlBufferType(type);
+                    ret_bind[i].buffer_type = p.first;
+                    ret_bind[i].is_unsigned = p.second;
+                    ret_bind[i].length = &length[i];
+                    ret_bind[i].is_null = reinterpret_cast<char*>(&isNull[i]);
+                    retbufs[i].resize(fields[i].max_length);
+                    ret_bind[i].buffer = retbufs[i].data();
+                    ret_bind[i].buffer_length = fields[i].max_length;
+                    ++i;
+                }
+                
+                if (mysql_stmt_bind_result(stmt, ret_bind)) {
+                    auto e = ErrorResult("stmt bind result error: " + this->handleError() + " " + mysql_stmt_error(stmt));
+                    mysql_free_result(metadata);
+                    mysql_stmt_close(stmt);
+                    return e;
+                }
+                
+                
+                std::vector<std::vector<std::pair<bool, std::string>>> retData;
+                std::cout << "WHILE";
+                auto r = mysql_stmt_fetch(stmt);
+                while (!r) {
+                    std::cout << "ABC" << std::endl;
+                    std::vector<std::pair<bool, std::string>> retRow;
+                    for (int i = 0; i < ret_num_fields; ++i) {
+                        if (isNull[i]) {
+                            retRow.push_back({false, std::string()});
+                        } else {
+                            retRow.push_back({true, std::string(retbufs[i].data(), length[i])});
+                        }
+                    }
+                    std::cout << "RETDATA: " << retRow.size();
+                    for (const auto& i : retRow) {
+                        std::cout << i.second << " ";
+                    }
+                    retData.push_back(std::move(retRow));
+                    r = mysql_stmt_fetch(stmt);
+                    
+                }
+                std::cout << "ENDWHILE";
+                mysql_free_result(metadata);
+                mysql_stmt_close(stmt);
+                return ReturnedRowsResult{retData};
+            } else {
+                auto affected_rows = mysql_stmt_affected_rows(stmt);
+                mysql_free_result(metadata);
+                if (mysql_stmt_close(stmt)) {
+                    return ErrorResult("statement error close: " + this->handleError() + " ");
+                }
+                return AffectedRowsResult(affected_rows);
             }
-            return AffectedRowsResult(affected_rows);
-            
         } break;
         default: {
             std::cout << "MariaDBImpl::query -> unhandled QueryType: " << query.type << std::endl;
