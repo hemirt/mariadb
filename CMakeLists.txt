@@ -10,10 +10,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("debug")
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -pthread -std=c++17 -O1 -g -fsanitize=thread -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -pthread -std=c++2a -O0 -g -fsanitize=thread -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
 else()
     message("release")
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -pthread -std=c++17 -O3 -flto ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -pthread -std=c++2a -O3 -flto ${CMAKE_CXX_FLAGS}")
 endif()
 
 set(hemirtmariadbinterface
